@@ -10,23 +10,44 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: zmkfirmware/zmk-build-arm:stable
+    strategy:
+      fail-fast: false
+      matrix:
+        shield: [modu_left, modu_right]
     steps:
-      - name: Checkout repository
+      - name: Checkout modu-c-firmware
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          path: modu-c-firmware
 
-      - name: Setup West and Zephyr
-        uses: zmkfirmware/zephyr-action@v1
+      - name: Checkout ZMK
+        uses: actions/checkout@v4
         with:
-          manifest-path: 'modu-module/config'
+          repository: zmkfirmware/zmk
+          path: zmk
 
-      - name: Build Firmware
+      - name: Init and update west workspace
+        working-directory: zmk/app
         run: |
-          zmk-build -b xiao_ble -- -DSHIELD=modu_left -DZMK_CONFIG="$(pwd)/modu-module/boards/shields/modu"
+          west init -l .
+          west update
+          west zephyr-export
 
-      - name: Upload Artifacts
+      - name: Build ${{ matrix.shield }}
+        working-directory: zmk/app
+        run: |
+          west build -d build/${{ matrix.shield }} -b ms88sf3/nrf52840 -p auto -- \
+            -DZMK_EXTRA_MODULES="${GITHUB_WORKSPACE}/modu-c-firmware/modu-module;${GITHUB_WORKSPACE}/modu-c-firmware/zmk-pmw3610-driver" \
+            -DSHIELD=${{ matrix.shield }}
+
+      - name: Convert to UF2
+        run: |
+          python3 modu-c-firmware/tools/uf2/uf2conv.py -f 0xADA52840 -c -o ${{ matrix.shield }}.uf2 zmk/app/build/${{ matrix.shield }}/zephyr/zmk.hex
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: modu-firmware
-          path: build/zephyr/*.uf2
+          name: ${{ matrix.shield }}-firmware
+          path: ${{ matrix.shield }}.uf2
