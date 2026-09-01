@@ -13,40 +13,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Cache West Modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            bootloader
-            modules
-            tools
-            zephyr
-            zmk
-          key: ${{ runner.os }}-zmk-${{ hashFiles('**/west.yml', '**/zmk_config.yml') }}
-
-      - name: Setup Zephyr workspace
+      - name: Build ZMK Firmware
         uses: zmkfirmware/zephyr-action@v1
         with:
-          manifest-path: 'config'
-
-      - name: Build MODU Left
-        run: zmk-build -b xiao_ble -- -DSHIELD=modu_left -DZMK_CONFIG="$(pwd)/modu-module/boards/shields/modu"
-
-      - name: Build MODU Right
-        run: zmk-build -b xiao_ble -- -DSHIELD=modu_right -DZMK_CONFIG="$(pwd)/modu-module/boards/shields/modu"
-
-      - name: Rename UF2 Files
-        run: |
-          mkdir outputs
-          cp build/zephyr/zmk.uf2 outputs/modu_left.uf2 || true
+          manifest-path: 'modu-module/config'
 
       - name: Upload Artifacts
-        uses: actions/upload-artifacts-plugin@v4
+        uses: actions/upload-artifact@v4
         with:
           name: modu-firmware
-          path: |
-            build/zephyr/zmk.uf2
-            outputs/
+          path: build/zephyr/zmk.uf2
