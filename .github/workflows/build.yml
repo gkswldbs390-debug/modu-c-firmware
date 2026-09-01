@@ -19,8 +19,6 @@ jobs:
     steps:
       - name: Checkout modu-c-firmware
         uses: actions/checkout@v4
-        with:
-          path: modu-c-firmware
 
       - name: Checkout ZMK
         uses: actions/checkout@v4
@@ -39,12 +37,12 @@ jobs:
         working-directory: zmk/app
         run: |
           west build -d build/${{ matrix.shield }} -b ms88sf3/nrf52840 -p auto -- \
-            -DZMK_EXTRA_MODULES="${GITHUB_WORKSPACE}/modu-c-firmware/modu-module;${GITHUB_WORKSPACE}/modu-c-firmware/zmk-pmw3610-driver" \
+            -DZMK_EXTRA_MODULES="${GITHUB_WORKSPACE}/modu-module;${GITHUB_WORKSPACE}/zmk-pmw3610-driver" \
             -DSHIELD=${{ matrix.shield }}
 
       - name: Convert to UF2
         run: |
-          python3 modu-c-firmware/tools/uf2/uf2conv.py -f 0xADA52840 -c -o ${{ matrix.shield }}.uf2 zmk/app/build/${{ matrix.shield }}/zephyr/zmk.hex
+          python3 tools/uf2/uf2conv.py -f 0xADA52840 -c -o ${{ matrix.shield }}.uf2 zmk/app/build/${{ matrix.shield }}/zephyr/zmk.hex
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
