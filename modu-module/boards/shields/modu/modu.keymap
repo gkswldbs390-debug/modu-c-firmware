@@ -42,7 +42,7 @@
             >;
         };
 
-        lower_layer_2 {
+        lower_layer2 {
             bindings = <
 &trans     &trans       &trans       &trans       &trans    &trans       &trans    &trans    &trans    &trans       &trans      &trans
 &trans     &trans       &trans       &trans       &trans    &trans       &trans    &trans    &kp UP    &trans       &trans      &trans
