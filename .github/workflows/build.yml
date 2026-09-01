@@ -1,0 +1,52 @@
+name: Build ZMK Firmware
+
+on:
+  push:
+    paths:
+      - '**.keymap'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache West Modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            bootloader
+            modules
+            tools
+            zephyr
+            zmk
+          key: ${{ runner.os }}-zmk-${{ hashFiles('**/west.yml', '**/zmk_config.yml') }}
+
+      - name: Setup Zephyr workspace
+        uses: zmkfirmware/zephyr-action@v1
+        with:
+          manifest-path: 'config'
+
+      - name: Build MODU Left
+        run: zmk-build -b xiao_ble -- -DSHIELD=modu_left -DZMK_CONFIG="$(pwd)/modu-module/boards/shields/modu"
+
+      - name: Build MODU Right
+        run: zmk-build -b xiao_ble -- -DSHIELD=modu_right -DZMK_CONFIG="$(pwd)/modu-module/boards/shields/modu"
+
+      - name: Rename UF2 Files
+        run: |
+          mkdir outputs
+          cp build/zephyr/zmk.uf2 outputs/modu_left.uf2 || true
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifacts-plugin@v4
+        with:
+          name: modu-firmware
+          path: |
+            build/zephyr/zmk.uf2
+            outputs/
